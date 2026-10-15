@@ -106,15 +106,16 @@ export default function App() {
         shots,
         company_website: "",
       });
-      if (!response.ok || !payload.pdfBase64) {
-        throw new Error(
-          payload.error ||
-            "A ficha não gerou o PDF. Tente de novo em instantes."
-        );
+      if (!response.ok || (!payload.emailed && !payload.pdfBase64)) {
+        throw new Error(payload.error || "Não foi possível enviar a ficha. Tente de novo em instantes.");
       }
-      const file = { base64: payload.pdfBase64, name: payload.pdfFileName || "Ficha Gold Bar.pdf" };
-      downloadPdfFile(file.base64, file.name);
-      setPdfFile(file);
+      if (!payload.emailed && payload.pdfBase64) {
+        const file = { base64: payload.pdfBase64, name: payload.pdfFileName || "Ficha Gold Bar.pdf" };
+        downloadPdfFile(file.base64, file.name);
+        setPdfFile(file);
+      } else {
+        setPdfFile(null);
+      }
       setDone(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -135,7 +136,11 @@ export default function App() {
             Obrigado pelo envio. Nossa equipe vai analisar a ficha e entrar em contato em breve para
             confirmar detalhes e próximos passos.
           </p>
-          <p className="mt-3 text-xs text-gold/80">O PDF da ficha foi baixado neste computador.</p>
+          <p className="mt-3 text-xs text-gold/80">
+            {pdfFile
+              ? "O PDF da ficha foi baixado neste computador."
+              : "A ficha foi enviada por e-mail para a equipe Gold Bar."}
+          </p>
           {pdfFile && (
             <button
               type="button"

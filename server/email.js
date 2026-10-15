@@ -1,31 +1,22 @@
 import nodemailer from "nodemailer";
 import { summarizeForDisplay } from "../shared/fields.js";
 
+function envValue(name) {
+  return String(process.env[name] || "")
+    .trim()
+    .replace(/^['"]|['"]$/g, "");
+}
+
 export function emailIsConfigured() {
-  if (process.env.RESEND_API_KEY) return true;
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  return Boolean(host && user && pass);
+  if (envValue("RESEND_API_KEY")) return true;
+  return Boolean(envValue("SMTP_HOST") && envValue("SMTP_USER") && envValue("SMTP_PASS"));
 }
 
 function createTransport() {
-  if (process.env.RESEND_API_KEY) {
-    return nodemailer.createTransport({
-      host: "smtp.resend.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: "resend",
-        pass: process.env.RESEND_API_KEY,
-      },
-    });
-  }
-
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || 587);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const host = envValue("SMTP_HOST");
+  const port = Number(envValue("SMTP_PORT") || 587);
+  const user = envValue("SMTP_USER");
+  const pass = envValue("SMTP_PASS");
   if (!host || !user || !pass) return null;
 
   return nodemailer.createTransport({
@@ -36,19 +27,52 @@ function createTransport() {
   });
 }
 
+function explainResendError(message) {
+  if (/only send testing emails/i.test(message)) {
+    return "A Resend ainda está em modo de teste e só entrega para o e-mail da conta (ricardobueri@gmail.com). Deixe NOTIFY_EMAIL com esse endereço.";
+  }
+  return message;
+}
+
+async function sendWithResend({ from, to, replyTo, subject, text, fileName, pdfBuffer }) {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${envValue("RESEND_API_KEY")}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      reply_to: replyTo,
+      subject,
+      text,
+      attachments: [
+        {
+          filename: fileName,
+          content: pdfBuffer.toString("base64"),
+        },
+      ],
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message =
+      (typeof data.message === "string" && data.message) ||
+      (typeof data.error === "string" && data.error) ||
+      data.error?.message ||
+      "A Resend recusou o envio do e-mail.";
+    throw new Error(explainResendError(String(message)));
+  }
+}
+
 export async function sendNotificationEmail({ fields, pdfBuffer, fileName }) {
-  const to = process.env.NOTIFY_EMAIL;
+  const to = envValue("NOTIFY_EMAIL");
   if (!to) throw new Error("NOTIFY_EMAIL não configurado.");
 
-  const transport = createTransport();
-  if (!transport) {
-    throw new Error(
-      "Configure SMTP_HOST, SMTP_USER e SMTP_PASS — ou RESEND_API_KEY — para enviar e-mails."
-    );
-  }
-
   const s = summarizeForDisplay(fields);
-  const from = process.env.MAIL_FROM || "Gold Bar Formulário <onboarding@resend.dev>";
+  const from = envValue("MAIL_FROM") || "Gold Bar <onboarding@resend.dev>";
 
   const text = [
     "Nova ficha de evento — Gold Bar",
@@ -68,11 +92,24 @@ export async function sendNotificationEmail({ fields, pdfBuffer, fileName }) {
     .filter(Boolean)
     .join("\n");
 
+  const subject = `Gold Bar — Ficha ${s.contratante || "cliente"} — ${s.data || ""}`.trim();
+  const replyTo = fields.EMAIL || undefined;
+
+  if (envValue("RESEND_API_KEY")) {
+    await sendWithResend({ from, to, replyTo, subject, text, fileName, pdfBuffer });
+    return;
+  }
+
+  const transport = createTransport();
+  if (!transport) {
+    throw new Error("Configure RESEND_API_KEY para enviar o e-mail.");
+  }
+
   await transport.sendMail({
     from,
     to,
-    replyTo: fields.EMAIL || undefined,
-    subject: `Gold Bar — Ficha ${s.contratante || "cliente"} — ${s.data || ""}`.trim(),
+    replyTo,
+    subject,
     text,
     attachments: [
       {

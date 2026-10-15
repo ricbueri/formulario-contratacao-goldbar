@@ -46,11 +46,13 @@ export async function processFormSubmission(body) {
     console.log(`[submit] PDF salvo em ${outPath}`);
   }
 
-  const skipEmail = process.env.SKIP_EMAIL === "true" || (!hosted && !emailIsConfigured());
-  if (!skipEmail) {
+  const skipEmail = !hosted && (process.env.SKIP_EMAIL === "true" || !emailIsConfigured());
+  let emailed = false;
+  if (skipEmail) {
+    console.log("[submit] e-mail não enviado (ambiente local)");
+  } else {
     await sendNotificationEmail({ fields, pdfBuffer, fileName });
-  } else if (!hosted) {
-    console.log("[submit] e-mail não enviado (SKIP_EMAIL ou SMTP/Resend não configurado)");
+    emailed = true;
   }
 
   console.log(
@@ -61,9 +63,10 @@ export async function processFormSubmission(body) {
     status: 200,
     json: {
       ok: true,
+      emailed,
       pdfSavedLocally,
-      pdfFileName: fileName,
-      pdfBase64: pdfBuffer.toString("base64"),
+      pdfFileName: emailed ? undefined : fileName,
+      pdfBase64: emailed ? undefined : pdfBuffer.toString("base64"),
     },
   };
 }
