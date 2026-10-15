@@ -1,0 +1,35 @@
+{
+  "name": "gold-bar-formulario",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Formulário público Gold Bar Eventos",
+  "scripts": {
+    "dev": "concurrently -k -n api,site -c yellow,cyan \"node server/index.js\" \"vite\"",
+    "dev:free": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/free-ports.ps1",
+    "server": "node server/index.js",
+    "client": "vite",
+    "build": "vite build",
+    "start": "cross-env NODE_ENV=production node server/index.js",
+    "pdf:test": "node server/generate-test-pdf.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "extenso": "^2.1.0",
+    "nodemailer": "^6.10.0",
+    "pdfkit": "^0.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.8",
+    "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "tailwindcss": "^4.1.8",
+    "vite": "^6.3.5"
+  }
+}
