@@ -118,11 +118,14 @@ export function ChoiceButtons({ label, value, onChange, options }) {
   );
 }
 
-export function Section({ title, subtitle, children, defaultOpen = true }) {
+export function Section({ title, subtitle, children, defaultOpen = true, emphasis = false }) {
+  const frame = emphasis
+    ? "border-gold/55 bg-gold/[0.05] shadow-[0_0_48px_rgba(212,175,55,0.16)]"
+    : "border-gold/20 bg-panel shadow-[0_0_40px_rgba(212,175,55,0.06)]";
   return (
     <details
       open={defaultOpen}
-      className="group mt-6 rounded-2xl border border-gold/20 bg-panel shadow-[0_0_40px_rgba(212,175,55,0.06)]"
+      className={`group mt-6 rounded-2xl border ${frame}`}
     >
       <summary className="cursor-pointer list-none px-6 py-5 md:px-8 [&::-webkit-details-marker]:hidden">
         <div className="flex items-start justify-between gap-3">

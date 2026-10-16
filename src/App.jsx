@@ -218,7 +218,7 @@ export default function App() {
             aria-hidden="true"
           />
 
-          <Section title="Contratante" subtitle="Dados para contato e contrato.">
+          <Section title="Dados do Cliente" subtitle="Dados para contato e contrato.">
             <div className="grid gap-4 md:grid-cols-2">
               <Field
                 label="Nome completo *"
@@ -286,7 +286,7 @@ export default function App() {
             <p className="mt-3 text-xs text-white/40">* Campos obrigatórios. E-mail e telefone precisam estar válidos.</p>
           </Section>
 
-          <Section title="Evento">
+          <Section title="Dados do Evento">
             <div className="grid gap-4 md:grid-cols-2">
               <Field
                 label="Natureza do evento *"
@@ -338,8 +338,10 @@ export default function App() {
                 hint="De 1 a 6 horas."
               />
             </div>
+          </Section>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Section title="Dados Financeiros" subtitle="Valor do evento, sinal e prazo para quitar o saldo." emphasis>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <Field
                 label="Valor total (R$)"
                 value={f.VALOR_TOTAL_RAW}
@@ -375,7 +377,7 @@ export default function App() {
                 placeholder="Automático"
               />
             </div>
-            <p className="mt-2 text-xs text-white/45">
+            <p className="mt-3 text-xs text-white/45">
               Se preencher a porcentagem, o sinal é calculado sobre o valor total. O saldo é sempre valor total − sinal.
             </p>
             <div className="mt-4">
