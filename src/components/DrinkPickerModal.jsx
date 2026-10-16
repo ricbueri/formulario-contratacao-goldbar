@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { A_DEFINIR } from "../../shared/cardapioDrinks.js";
 import {
   DrinkCompositionPinnedOverlay,
   DrinkCompositionPreviewBar,
@@ -145,15 +144,6 @@ export function DrinkPickerModal({
             className="mt-3 w-full rounded-lg border border-gold/20 bg-black/50 px-3 py-2 text-sm text-white outline-none focus:border-gold"
             autoFocus
           />
-          {!multi && (
-            <button
-              type="button"
-              onClick={() => handlePick(A_DEFINIR)}
-              className="mt-3 w-full rounded-lg border border-dashed border-gold/40 py-2 text-sm text-gold hover:bg-gold/10"
-            >
-              {A_DEFINIR}
-            </button>
-          )}
           <DrinkCompositionPreviewBar name={hoverName} />
         </div>
 

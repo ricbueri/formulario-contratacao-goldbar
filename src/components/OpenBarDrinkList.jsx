@@ -18,12 +18,24 @@ export function OpenBarDrinkList({ drinks, onChange }) {
     onChange([...drinks, ""]);
   }
 
+  function markADefinir() {
+    const emptyIndex = drinks.findIndex((drink) => !String(drink).trim());
+    if (emptyIndex >= 0) {
+      updateAt(emptyIndex, A_DEFINIR);
+      return;
+    }
+    if (drinks.length >= MAX_OPEN_BAR_DRINKS) return;
+    onChange([...drinks, A_DEFINIR]);
+  }
+
   function removeAt(index) {
     if (drinks.length <= 1) return;
     onChange(drinks.filter((_, i) => i !== index));
   }
 
   const atMax = drinks.length >= MAX_OPEN_BAR_DRINKS;
+  const hasEmptySlot = drinks.some((drink) => !String(drink).trim());
+  const canMarkADefinir = hasEmptySlot || !atMax;
 
   return (
     <>
@@ -64,18 +76,29 @@ export function OpenBarDrinkList({ drinks, onChange }) {
         ))}
       </div>
 
-      {!atMax && (
-        <button
-          type="button"
-          onClick={addSlot}
-          className="mt-3 rounded-full border border-gold/35 px-4 py-2 text-xs text-gold hover:bg-gold/10"
-        >
-          + Adicionar drink
-        </button>
-      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {!atMax && (
+          <button
+            type="button"
+            onClick={addSlot}
+            className="rounded-full border border-gold/35 px-4 py-2 text-xs text-gold hover:bg-gold/10"
+          >
+            + Adicionar drink
+          </button>
+        )}
+        {canMarkADefinir && (
+          <button
+            type="button"
+            onClick={markADefinir}
+            className="rounded-full border border-stone-300/50 bg-stone-200/10 px-4 py-2 text-xs text-stone-100 hover:bg-stone-200/20"
+          >
+            {A_DEFINIR}
+          </button>
+        )}
+      </div>
 
       <p className="mt-2 text-xs text-white/45">
-        Até {MAX_OPEN_BAR_DRINKS} drinks no pacote. Use «{A_DEFINIR}» se ainda não fechou a lista.
+        Até {MAX_OPEN_BAR_DRINKS} drinks no pacote. Se ainda não fechou a lista, use o botão «{A_DEFINIR}» ao lado de adicionar.
       </p>
 
       <DrinkPickerModal
