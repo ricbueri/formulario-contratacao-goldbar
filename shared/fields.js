@@ -1,5 +1,13 @@
 import { joinDrinkLine } from "./cardapioDrinks.js";
-import { capitalizeWords, composeEndereco, formatBaseTipo, yesNo } from "./formatters.js";
+import {
+  capitalizeWords,
+  composeEndereco,
+  formatBaseTipo,
+  formatMoneyWithExtenso,
+  formatPrazo,
+  parseMoneyBR,
+  yesNo,
+} from "./formatters.js";
 
 export function composeRuaComNumero({ endereco, numero, complemento } = {}) {
   const rua = String(endereco || "").replace(/\s+/g, " ").trim();
@@ -31,6 +39,12 @@ export const EMPTY_PUBLIC_FIELDS = {
   NUM_CONVIDADOS_RAW: "",
   HORARIO_INICIO: "",
   TEMPO_OPENBAR: "",
+  VALOR_TOTAL_RAW: "",
+  SINAL_PCT: "",
+  SINAL_RESERVA_RAW: "",
+  SALDO_REMANESCENTE_RAW: "",
+  PRAZO_SALDO_QTD: "",
+  PRAZO_SALDO_UNIDADE: "dias",
   DRINKS_LINHA: "",
   BASES_LINHA: "",
   BASE_TIPO: "",
@@ -70,6 +84,7 @@ export function buildSubmitPayload(form) {
     NUM_CONVIDADOS_RAW: form.NUM_CONVIDADOS_RAW,
     HORARIO_INICIO: form.HORARIO_INICIO,
     TEMPO_OPENBAR: form.TEMPO_OPENBAR,
+    ...eventMoneyFields(form),
     DRINKS_LINHA: joinDrinkLine(openBarDrinks),
     BASES_LINHA: form.BASES_LINHA || "",
     BASE_TIPO: form.BASE_TIPO || "",
@@ -83,6 +98,30 @@ export function buildSubmitPayload(form) {
   };
 
   return { fields, openBarDrinks, welcomeDrinks: welcome, shots };
+}
+
+function eventMoneyFields(form) {
+  const valorTotal = parseMoneyBR(form.VALOR_TOTAL_RAW);
+  let sinal = parseMoneyBR(form.SINAL_RESERVA_RAW);
+  const pct = parseMoneyBR(form.SINAL_PCT);
+  if (pct !== null && valorTotal !== null && pct > 0) {
+    sinal = Math.round(((valorTotal * pct) / 100) * 100) / 100;
+  }
+  const saldo =
+    valorTotal !== null && sinal !== null ? Math.round((valorTotal - sinal) * 100) / 100 : null;
+
+  return {
+    VALOR_TOTAL_RAW: form.VALOR_TOTAL_RAW || "",
+    SINAL_PCT: form.SINAL_PCT || "",
+    SINAL_RESERVA_RAW: form.SINAL_RESERVA_RAW || "",
+    SALDO_REMANESCENTE_RAW: form.SALDO_REMANESCENTE_RAW || "",
+    PRAZO_SALDO_QTD: form.PRAZO_SALDO_QTD || "",
+    PRAZO_SALDO_UNIDADE: form.PRAZO_SALDO_UNIDADE || "dias",
+    VALOR_TOTAL: valorTotal !== null ? formatMoneyWithExtenso(valorTotal) : "",
+    SINAL_RESERVA: sinal !== null ? formatMoneyWithExtenso(sinal) : "",
+    SALDO_REMANESCENTE: saldo !== null ? formatMoneyWithExtenso(saldo) : "",
+    PRAZO_SALDO: formatPrazo(form.PRAZO_SALDO_QTD, form.PRAZO_SALDO_UNIDADE),
+  };
 }
 
 export { validatePublicForm } from "./validateForm.js";
@@ -106,6 +145,10 @@ export function summarizeForDisplay(fields) {
     convidados: fields.NUM_CONVIDADOS_RAW,
     horario: fields.HORARIO_INICIO,
     tempo: fields.TEMPO_OPENBAR,
+    valorTotal: fields.VALOR_TOTAL,
+    sinal: fields.SINAL_RESERVA,
+    saldo: fields.SALDO_REMANESCENTE,
+    prazoSaldo: fields.PRAZO_SALDO,
     drinks: fields.DRINKS_LINHA,
     bases: fields.BASES_LINHA,
     baseTipo: formatBaseTipo(fields.BASE_TIPO),

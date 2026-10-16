@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { postFormSubmit } from "./api/submit.js";
-import { formatCpfCnpjInput, formatDateBrInput, formatPhoneBrInput } from "./utils/masks.js";
+import { formatCpfCnpjInput, formatDateBrInput, formatMoneyBrInput, formatPhoneBrInput } from "./utils/masks.js";
+import { formatMoneyInput, parseMoneyBR } from "../shared/formatters.js";
 import { EMPTY_PUBLIC_FIELDS } from "../shared/fields.js";
 import { validatePublicForm } from "../shared/validateForm.js";
 import { SHOT_OPTIONS, WELCOME_DRINK_OPTIONS } from "../shared/cardapioDrinks.js";
 import { BASE_SPIRIT_OPTIONS } from "../shared/drinkCatalog.js";
 import { OPEN_BAR_DURATION_OPTIONS } from "./constants.js";
-import { ChoiceButtons, Field, MultiChoiceButtons, Section, SelectField } from "./components/ui.jsx";
+import { ChoiceButtons, Field, MultiChoiceButtons, Section, SelectField, inputClass } from "./components/ui.jsx";
 import { fetchAddressByCep, formatCepInput } from "./utils/viacep.js";
 import { OpenBarDrinkList } from "./components/OpenBarDrinkList.jsx";
 import { OptionalMultiPick } from "./components/OptionalMultiPick.jsx";
@@ -51,6 +52,35 @@ export default function App() {
   useEffect(() => {
     if (error) errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [error]);
+
+  useEffect(() => {
+    setFields((current) => {
+      const total = parseMoneyBR(current.VALOR_TOTAL_RAW);
+      const pct = parseMoneyBR(current.SINAL_PCT);
+      let sinal = parseMoneyBR(current.SINAL_RESERVA_RAW);
+      let nextSinalRaw = current.SINAL_RESERVA_RAW;
+
+      if (pct !== null && total !== null && pct > 0) {
+        const calc = Math.round(((total * pct) / 100) * 100) / 100;
+        nextSinalRaw = formatMoneyInput(calc);
+        sinal = calc;
+      }
+
+      let nextSaldoRaw = "";
+      if (total !== null && sinal !== null) {
+        nextSaldoRaw = formatMoneyInput(Math.round((total - sinal) * 100) / 100);
+      }
+
+      if (nextSinalRaw === current.SINAL_RESERVA_RAW && nextSaldoRaw === current.SALDO_REMANESCENTE_RAW) {
+        return current;
+      }
+      return {
+        ...current,
+        SINAL_RESERVA_RAW: nextSinalRaw,
+        SALDO_REMANESCENTE_RAW: nextSaldoRaw,
+      };
+    });
+  }, [fields.VALOR_TOTAL_RAW, fields.SINAL_RESERVA_RAW, fields.SINAL_PCT]);
 
   async function handleCepChange(raw) {
     const formatted = formatCepInput(raw);
@@ -307,6 +337,70 @@ export default function App() {
                 options={OPEN_BAR_DURATION_OPTIONS}
                 hint="De 1 a 6 horas."
               />
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <Field
+                label="Valor total (R$)"
+                value={f.VALOR_TOTAL_RAW}
+                onChange={(v) => setField("VALOR_TOTAL_RAW")(formatMoneyBrInput(v))}
+                placeholder="1.509,00"
+                inputMode="numeric"
+              />
+              <Field
+                label="% do sinal (opcional)"
+                value={f.SINAL_PCT}
+                onChange={(v) => setField("SINAL_PCT")(v.replace(/[^\d.,]/g, "").slice(0, 6))}
+                placeholder="Ex: 50"
+                inputMode="decimal"
+              />
+              <Field
+                label="Sinal de reserva (R$)"
+                value={f.SINAL_RESERVA_RAW}
+                onChange={(value) =>
+                  setFields((current) => ({
+                    ...current,
+                    SINAL_RESERVA_RAW: formatMoneyBrInput(value),
+                    SINAL_PCT: "",
+                  }))
+                }
+                placeholder="556,00"
+                inputMode="numeric"
+              />
+              <Field
+                label="Saldo remanescente (R$)"
+                value={f.SALDO_REMANESCENTE_RAW}
+                onChange={() => {}}
+                readOnly
+                placeholder="Automático"
+              />
+            </div>
+            <p className="mt-2 text-xs text-white/45">
+              Se preencher a porcentagem, o sinal é calculado sobre o valor total. O saldo é sempre valor total − sinal.
+            </p>
+            <div className="mt-4">
+              <span className="text-xs uppercase tracking-wide text-gold/80">
+                Prazo para quitar o saldo (antes da data do evento)
+              </span>
+              <div className="mt-1.5 flex max-w-sm gap-3">
+                <input
+                  type="number"
+                  min="1"
+                  value={f.PRAZO_SALDO_QTD}
+                  onChange={(e) => setField("PRAZO_SALDO_QTD")(e.target.value)}
+                  placeholder="7"
+                  className={`${inputClass} w-24`}
+                />
+                <select
+                  value={f.PRAZO_SALDO_UNIDADE}
+                  onChange={(e) => setField("PRAZO_SALDO_UNIDADE")(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="dias">dias</option>
+                  <option value="meses">meses</option>
+                </select>
+              </div>
+              <p className="mt-1.5 text-xs text-white/45">Em branco = padrão de 07 (sete) dias.</p>
             </div>
           </Section>
 

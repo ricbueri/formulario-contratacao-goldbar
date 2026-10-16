@@ -44,6 +44,10 @@ export function buildSummaryPdf(fields) {
   line(doc, "Convidados", s.convidados);
   line(doc, "Início open bar", s.horario);
   line(doc, "Duração", s.tempo);
+  line(doc, "Valor total", s.valorTotal);
+  line(doc, "Sinal de reserva", s.sinal);
+  line(doc, "Saldo remanescente", s.saldo);
+  line(doc, "Prazo para quitar o saldo", s.prazoSaldo);
   doc.moveDown(0.8);
 
   doc.fontSize(12).fillColor("#8B6914").text("Pacote — Open bar");

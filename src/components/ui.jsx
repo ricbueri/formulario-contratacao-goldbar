@@ -11,6 +11,7 @@ export function Field({
   type = "text",
   inputMode,
   autoComplete,
+  readOnly = false,
 }) {
   return (
     <label className={`block space-y-1.5 ${className}`}>
@@ -20,10 +21,11 @@ export function Field({
         type={type}
         inputMode={inputMode}
         autoComplete={autoComplete}
+        readOnly={readOnly}
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={inputClass}
+        className={`${inputClass} ${readOnly ? "cursor-default text-white/70" : ""}`}
       />
     </label>
   );

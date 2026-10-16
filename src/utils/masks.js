@@ -20,6 +20,16 @@ export function formatDateBrInput(value) {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
+export function formatMoneyBrInput(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 12);
+  if (!digits) return "";
+  const amount = Number(digits) / 100;
+  return amount.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export function formatPhoneBrInput(value) {
   let digits = String(value || "").replace(/\D/g, "");
   if (digits.startsWith("55") && digits.length > 11) digits = digits.slice(2);
