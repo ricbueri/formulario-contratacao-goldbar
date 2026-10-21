@@ -3,7 +3,7 @@ import { postFormSubmit } from "./api/submit.js";
 import { formatCpfCnpjInput, formatDateBrInput, formatMoneyBrInput, formatPhoneBrInput } from "./utils/masks.js";
 import { formatMoneyInput, parseMoneyBR } from "../shared/formatters.js";
 import { EMPTY_PUBLIC_FIELDS } from "../shared/fields.js";
-import { validatePublicForm } from "../shared/validateForm.js";
+import { requiresAlcoholBases, validatePublicForm } from "../shared/validateForm.js";
 import { SHOT_OPTIONS, WELCOME_DRINK_OPTIONS } from "../shared/cardapioDrinks.js";
 import { BASE_SPIRIT_OPTIONS } from "../shared/drinkCatalog.js";
 import { OPEN_BAR_DURATION_OPTIONS } from "./constants.js";
@@ -119,13 +119,13 @@ export default function App() {
     e.preventDefault();
     setError("");
 
-    const openBarDrinksClean = openBarDrinks.map((d) => String(d).trim()).filter(Boolean);
-    const form = { ...fields, openBarDrinks: openBarDrinksClean, welcomeDrinks, shots };
+    const form = { ...fields, openBarDrinks, welcomeDrinks, shots };
     const clientErrors = validatePublicForm(form);
     if (clientErrors.length) {
       setError(clientErrors.join("\n"));
       return;
     }
+    const openBarDrinksClean = openBarDrinks.map((d) => String(d).trim()).filter(Boolean);
 
     setLoading(true);
     try {
@@ -186,6 +186,7 @@ export default function App() {
   }
 
   const f = fields;
+  const alcoholBasesRequired = requiresAlcoholBases(openBarDrinks);
   const selectedBases = String(f.BASES_LINHA || "")
     .split(/,\s*/)
     .map((s) => s.trim())
@@ -205,6 +206,7 @@ export default function App() {
           <h1 className="font-serif text-3xl text-gold-soft md:text-4xl">Ficha do seu evento</h1>
           <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/65">
             Preencha os dados abaixo. Enviamos um resumo para nossa equipe — não é o contrato final.
+            Os campos com * são obrigatórios: a ficha só é enviada quando estiver completa.
           </p>
         </header>
 
@@ -227,13 +229,13 @@ export default function App() {
                 placeholder="Ex: Mariana Alves Costa"
               />
               <Field
-                label="CPF ou CNPJ"
+                label="CPF ou CNPJ *"
                 value={f.CPF}
                 onChange={(v) => setField("CPF")(formatCpfCnpjInput(v))}
                 placeholder="Ex: 000.000.000-00"
               />
               <Field
-                label="CEP"
+                label="CEP *"
                 value={f.CEP}
                 onChange={handleCepChange}
                 placeholder="Ex: 05433-000"
@@ -244,7 +246,7 @@ export default function App() {
               />
               {cepStatus && <p className="text-xs text-gold/70 md:col-span-2">{cepStatus}</p>}
               <Field
-                label="Logradouro (rua)"
+                label="Logradouro (rua) *"
                 value={f.ENDERECO}
                 onChange={setField("ENDERECO")}
                 className="md:col-span-2"
@@ -263,8 +265,8 @@ export default function App() {
                 onChange={setField("COMPLEMENTO_ENDERECO")}
                 placeholder="Ex: Apto 42, bloco B"
               />
-              <Field label="Cidade" value={f.CIDADE} onChange={setField("CIDADE")} placeholder="Ex: São Paulo" />
-              <Field label="UF" value={f.ESTADO} onChange={setField("ESTADO")} placeholder="Ex: SP" />
+              <Field label="Cidade *" value={f.CIDADE} onChange={setField("CIDADE")} placeholder="Ex: São Paulo" />
+              <Field label="UF *" value={f.ESTADO} onChange={setField("ESTADO")} placeholder="Ex: SP" />
               <Field
                 label="E-mail *"
                 value={f.EMAIL}
@@ -283,7 +285,9 @@ export default function App() {
                 autoComplete="tel"
               />
             </div>
-            <p className="mt-3 text-xs text-white/40">* Campos obrigatórios. E-mail e telefone precisam estar válidos.</p>
+            <p className="mt-3 text-xs text-white/40">
+              Complemento é o único campo livre desta seção. E-mail, telefone, CPF/CNPJ e CEP precisam estar válidos.
+            </p>
           </Section>
 
           <Section title="Dados do Evento">
@@ -310,26 +314,26 @@ export default function App() {
                 hint="Nome do espaço, clube ou tipo de local — não precisa do endereço completo."
               />
               <Field
-                label="Cidade do evento"
+                label="Cidade do evento *"
                 value={f.CIDADE_EVENTO}
                 onChange={setField("CIDADE_EVENTO")}
                 className="md:col-span-2"
                 placeholder="Ex: São Paulo"
               />
               <Field
-                label="Nº de convidados"
+                label="Nº de convidados *"
                 value={f.NUM_CONVIDADOS_RAW}
                 onChange={setField("NUM_CONVIDADOS_RAW")}
                 placeholder="Ex: 80"
               />
               <Field
-                label="Início do open bar"
+                label="Início do open bar *"
                 value={f.HORARIO_INICIO}
                 onChange={setField("HORARIO_INICIO")}
                 placeholder="Ex: 16:00"
               />
               <SelectField
-                label="Tempo de open bar"
+                label="Tempo de open bar *"
                 value={f.TEMPO_OPENBAR}
                 onChange={setField("TEMPO_OPENBAR")}
                 className="md:col-span-2"
@@ -343,7 +347,7 @@ export default function App() {
           <Section title="Dados Financeiros" subtitle="Valor do evento, sinal e prazo para quitar o saldo." emphasis>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <Field
-                label="Valor total (R$)"
+                label="Valor total (R$) *"
                 value={f.VALOR_TOTAL_RAW}
                 onChange={(v) => setField("VALOR_TOTAL_RAW")(formatMoneyBrInput(v))}
                 placeholder="1.509,00"
@@ -357,7 +361,7 @@ export default function App() {
                 inputMode="decimal"
               />
               <Field
-                label="Sinal de reserva (R$)"
+                label="Sinal de reserva (R$) *"
                 value={f.SINAL_RESERVA_RAW}
                 onChange={(value) =>
                   setFields((current) => ({
@@ -381,8 +385,8 @@ export default function App() {
               Se preencher a porcentagem, o sinal é calculado sobre o valor total. O saldo é sempre valor total − sinal.
             </p>
             <div className="mt-4">
-              <span className="text-xs uppercase tracking-wide text-gold/80">
-                Prazo para quitar o saldo (antes da data do evento)
+                <span className="text-xs uppercase tracking-wide text-gold/80">
+                Prazo para quitar o saldo (antes da data do evento) *
               </span>
               <div className="mt-1.5 flex max-w-sm gap-3">
                 <input
@@ -402,26 +406,30 @@ export default function App() {
                   <option value="meses">meses</option>
                 </select>
               </div>
-              <p className="mt-1.5 text-xs text-white/45">Em branco = padrão de 07 (sete) dias.</p>
+              <p className="mt-1.5 text-xs text-white/45">Informe quantos dias ou meses antes do evento o saldo deve ser quitado.</p>
             </div>
           </Section>
 
           <Section
             title="Open bar — drinks"
-            subtitle="Adicione quantos drinks quiser. Toque em cada linha para abrir o cardápio."
+            subtitle="Escolha de 1 a 6 drinks. Toque em cada linha para abrir o cardápio. Linhas em branco impedem o envio."
             defaultOpen={true}
           >
             <OpenBarDrinkList drinks={openBarDrinks} onChange={setOpenBarDrinks} />
             <div className="mt-6 grid gap-5 border-t border-gold/10 pt-5">
               <MultiChoiceButtons
-                label="Bases alcoólicas do pacote"
-                hint="Selecione todas que se aplicam ao seu evento."
+                label={alcoholBasesRequired ? "Bases alcoólicas do pacote *" : "Bases alcoólicas do pacote"}
+                hint={
+                  alcoholBasesRequired
+                    ? "Obrigatório. Selecione todas que se aplicam ao seu evento."
+                    : "Opcional: este open bar está só com drinks sem álcool."
+                }
                 options={BASE_SPIRIT_OPTIONS}
                 selected={selectedBases}
                 onChange={setBases}
               />
               <ChoiceButtons
-                label="Base nacional ou importada"
+                label={alcoholBasesRequired ? "Base nacional ou importada *" : "Base nacional ou importada"}
                 value={f.BASE_TIPO}
                 onChange={setField("BASE_TIPO")}
                 options={["Nacional", "Importada", "Nacional e Importada"]}
