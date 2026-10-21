@@ -5,6 +5,7 @@ import {
   formatBaseTipo,
   formatMoneyWithExtenso,
   formatPrazo,
+  normalizeHorario,
   parseMoneyBR,
   yesNo,
 } from "./formatters.js";
@@ -82,7 +83,7 @@ export function buildSubmitPayload(form) {
     LOCAL_EVENTO: form.LOCAL_EVENTO,
     CIDADE_EVENTO: form.CIDADE_EVENTO || "",
     NUM_CONVIDADOS_RAW: form.NUM_CONVIDADOS_RAW,
-    HORARIO_INICIO: form.HORARIO_INICIO,
+    HORARIO_INICIO: normalizeHorario(form.HORARIO_INICIO) || form.HORARIO_INICIO,
     TEMPO_OPENBAR: form.TEMPO_OPENBAR,
     ...eventMoneyFields(form),
     DRINKS_LINHA: joinDrinkLine(openBarDrinks),

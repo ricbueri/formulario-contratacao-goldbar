@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { postFormSubmit } from "./api/submit.js";
-import { formatCpfCnpjInput, formatDateBrInput, formatMoneyBrInput, formatPhoneBrInput } from "./utils/masks.js";
-import { formatMoneyInput, parseMoneyBR } from "../shared/formatters.js";
+import { formatCpfCnpjInput, formatDateBrInput, formatMoneyBrInput, formatPhoneBrInput, formatTimeBrInput } from "./utils/masks.js";
+import { formatMoneyInput, normalizeHorario, parseMoneyBR } from "../shared/formatters.js";
 import { EMPTY_PUBLIC_FIELDS } from "../shared/fields.js";
 import { isBarSemAlcool, validatePublicForm } from "../shared/validateForm.js";
 import { SHOT_OPTIONS, WELCOME_DRINK_OPTIONS } from "../shared/cardapioDrinks.js";
@@ -119,7 +119,12 @@ export default function App() {
     e.preventDefault();
     setError("");
 
-    const form = { ...fields, openBarDrinks, welcomeDrinks, shots };
+    const horario = normalizeHorario(fields.HORARIO_INICIO);
+    const fieldsToSend = horario ? { ...fields, HORARIO_INICIO: horario } : fields;
+    if (horario && horario !== fields.HORARIO_INICIO) {
+      setFields((current) => ({ ...current, HORARIO_INICIO: horario }));
+    }
+    const form = { ...fieldsToSend, openBarDrinks, welcomeDrinks, shots };
     const clientErrors = validatePublicForm(form);
     if (clientErrors.length) {
       setError(clientErrors.join("\n"));
@@ -130,7 +135,7 @@ export default function App() {
     setLoading(true);
     try {
       const { response, payload } = await postFormSubmit({
-        fields,
+        fields: fieldsToSend,
         openBarDrinks: openBarDrinksClean,
         welcomeDrinks,
         shots,
@@ -351,8 +356,17 @@ export default function App() {
               <Field
                 label="Início do open bar *"
                 value={f.HORARIO_INICIO}
-                onChange={setField("HORARIO_INICIO")}
-                placeholder="Ex: 16:00"
+                onChange={(v) => setField("HORARIO_INICIO")(formatTimeBrInput(v))}
+                onBlur={() =>
+                  setFields((current) => {
+                    const next = normalizeHorario(current.HORARIO_INICIO);
+                    if (!next || next === current.HORARIO_INICIO) return current;
+                    return { ...current, HORARIO_INICIO: next };
+                  })
+                }
+                placeholder="Ex: 1600"
+                inputMode="numeric"
+                hint="Digite 1600 para 16:00, ou 1630 para 16:30. Só a hora, como 16, vira 16:00."
               />
               <SelectField
                 label="Tempo de open bar *"
@@ -408,7 +422,7 @@ export default function App() {
             </p>
             <div className="mt-4">
                 <span className="text-xs uppercase tracking-wide text-gold/80">
-                Prazo para quitar o saldo (antes da data do evento) *
+                Prazo para quitar o saldo (antes da data do evento)
               </span>
               <div className="mt-1.5 flex max-w-sm gap-3">
                 <input
@@ -428,7 +442,7 @@ export default function App() {
                   <option value="meses">meses</option>
                 </select>
               </div>
-              <p className="mt-1.5 text-xs text-white/45">Informe quantos dias ou meses antes do evento o saldo deve ser quitado.</p>
+              <p className="mt-1.5 text-xs text-white/45">Em branco = padrão de 07 (sete) dias.</p>
             </div>
           </Section>
 

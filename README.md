@@ -45,13 +45,17 @@ Arquivo: `server/output/teste-ficha.pdf`
 | `SKIP_EMAIL` | `true` pula envio de e-mail |
 | `PORT` | Porta da API (padrão 3001) |
 
+## Link do cliente
+
+O formulário que o cliente preenche é sempre [https://formulario-clientes-goldbar.vercel.app/](https://formulario-clientes-goldbar.vercel.app/). As alterações entram nesse endereço. Não publique outro link no lugar dele.
+
 ## Deploy (Vercel ou Netlify)
 
 O site é o build do Vite (`dist/`). O envio fica em `api/submit.js` (Vercel) e `netlify/functions/submit.js` (Netlify). Segredos só no painel do host, nunca no Git.
 
 Variáveis no painel: `NOTIFY_EMAIL`, `MAIL_FROM`, `RESEND_API_KEY` (ou `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`) e `SKIP_EMAIL=false`. Não defina `SAVE_PDF_LOCALLY` na nuvem.
 
-Na Vercel: importe o repositório, framework Vite, e publique. O endereço fica `https://seu-projeto.vercel.app`.
+Na Vercel, o endereço do cliente é `https://formulario-clientes-goldbar.vercel.app/`.
 
 Na Netlify: build `npm run build`, publish `dist` (já está no `netlify.toml`).
 
