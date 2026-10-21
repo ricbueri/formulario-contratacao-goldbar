@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { requiresAlcoholBases, validatePublicForm } from "./validateForm.js";
+import { BAR_SEM_ALCOOL } from "./drinkCatalog.js";
+import { isBarSemAlcool, validatePublicForm } from "./validateForm.js";
 
 function completeForm(overrides = {}) {
   return {
@@ -42,18 +43,28 @@ test("bloqueia bases e tipo de base vazios", () => {
   assert.ok(errors.some((error) => /nacional, importada/i.test(error)));
 });
 
-test("soft bar puro não exige bases", () => {
+test("botão bar sem álcool preenche base e tipo", () => {
   const form = completeForm({
-    openBarDrinks: ["Berry Fresh", "Peach Gold"],
-    BASES_LINHA: "",
-    BASE_TIPO: "",
+    openBarDrinks: ["Berry Fresh"],
+    BASES_LINHA: BAR_SEM_ALCOOL,
+    BASE_TIPO: BAR_SEM_ALCOOL,
   });
-  assert.equal(requiresAlcoholBases(form.openBarDrinks), false);
+  assert.equal(isBarSemAlcool(form), true);
   assert.deepEqual(validatePublicForm(form), []);
 });
 
+test("soft bar sem o botão continua pendente", () => {
+  const errors = validatePublicForm(
+    completeForm({
+      openBarDrinks: ["Berry Fresh", "Peach Gold"],
+      BASES_LINHA: "",
+      BASE_TIPO: "",
+    })
+  );
+  assert.ok(errors.some((error) => /bar sem álcool/i.test(error)));
+});
+
 test("«À definir» ainda exige bases", () => {
-  assert.equal(requiresAlcoholBases(["À definir"]), true);
   const errors = validatePublicForm(completeForm({ openBarDrinks: ["À definir"], BASES_LINHA: "", BASE_TIPO: "" }));
   assert.ok(errors.some((error) => /base alcoólica/i.test(error)));
 });

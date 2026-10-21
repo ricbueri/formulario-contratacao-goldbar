@@ -3,9 +3,9 @@ import { postFormSubmit } from "./api/submit.js";
 import { formatCpfCnpjInput, formatDateBrInput, formatMoneyBrInput, formatPhoneBrInput } from "./utils/masks.js";
 import { formatMoneyInput, parseMoneyBR } from "../shared/formatters.js";
 import { EMPTY_PUBLIC_FIELDS } from "../shared/fields.js";
-import { requiresAlcoholBases, validatePublicForm } from "../shared/validateForm.js";
+import { isBarSemAlcool, validatePublicForm } from "../shared/validateForm.js";
 import { SHOT_OPTIONS, WELCOME_DRINK_OPTIONS } from "../shared/cardapioDrinks.js";
-import { BASE_SPIRIT_OPTIONS } from "../shared/drinkCatalog.js";
+import { BAR_SEM_ALCOOL, BASE_SPIRIT_OPTIONS } from "../shared/drinkCatalog.js";
 import { OPEN_BAR_DURATION_OPTIONS } from "./constants.js";
 import { ChoiceButtons, Field, MultiChoiceButtons, Section, SelectField, inputClass } from "./components/ui.jsx";
 import { fetchAddressByCep, formatCepInput } from "./utils/viacep.js";
@@ -186,14 +186,36 @@ export default function App() {
   }
 
   const f = fields;
-  const alcoholBasesRequired = requiresAlcoholBases(openBarDrinks);
-  const selectedBases = String(f.BASES_LINHA || "")
-    .split(/,\s*/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const barSemAlcool = isBarSemAlcool(f);
+  const selectedBases = barSemAlcool
+    ? []
+    : String(f.BASES_LINHA || "")
+        .split(/,\s*/)
+        .map((s) => s.trim())
+        .filter(Boolean);
 
   function setBases(nextList) {
-    setField("BASES_LINHA")(nextList.join(", "));
+    setFields((current) => ({
+      ...current,
+      BASES_LINHA: nextList.join(", "),
+      BASE_TIPO: current.BASE_TIPO === BAR_SEM_ALCOOL ? "" : current.BASE_TIPO,
+    }));
+  }
+
+  function chooseBarSemAlcool() {
+    setFields((current) => ({
+      ...current,
+      BASES_LINHA: BAR_SEM_ALCOOL,
+      BASE_TIPO: BAR_SEM_ALCOOL,
+    }));
+  }
+
+  function setBaseTipo(value) {
+    setFields((current) => ({
+      ...current,
+      BASE_TIPO: value,
+      BASES_LINHA: current.BASES_LINHA === BAR_SEM_ALCOOL ? "" : current.BASES_LINHA,
+    }));
   }
 
   return (
@@ -417,21 +439,35 @@ export default function App() {
           >
             <OpenBarDrinkList drinks={openBarDrinks} onChange={setOpenBarDrinks} />
             <div className="mt-6 grid gap-5 border-t border-gold/10 pt-5">
+              <div className="space-y-1.5">
+                <span className="text-xs uppercase tracking-wide text-gold/80">Evento sem álcool</span>
+                <p className="text-xs text-white/45">
+                  Preenche a base alcoólica e o tipo como bar sem álcool.
+                </p>
+                <button
+                  type="button"
+                  aria-pressed={barSemAlcool}
+                  onClick={chooseBarSemAlcool}
+                  className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                    barSemAlcool
+                      ? "border-gold bg-gold text-black"
+                      : "border-gold/30 text-gold/80 hover:bg-gold/10"
+                  }`}
+                >
+                  Bar sem álcool
+                </button>
+              </div>
               <MultiChoiceButtons
-                label={alcoholBasesRequired ? "Bases alcoólicas do pacote *" : "Bases alcoólicas do pacote"}
-                hint={
-                  alcoholBasesRequired
-                    ? "Obrigatório. Selecione todas que se aplicam ao seu evento."
-                    : "Opcional: este open bar está só com drinks sem álcool."
-                }
+                label="Bases alcoólicas do pacote *"
+                hint="Obrigatório. Selecione todas que se aplicam ao seu evento, ou use «Bar sem álcool»."
                 options={BASE_SPIRIT_OPTIONS}
                 selected={selectedBases}
                 onChange={setBases}
               />
               <ChoiceButtons
-                label={alcoholBasesRequired ? "Base nacional ou importada *" : "Base nacional ou importada"}
-                value={f.BASE_TIPO}
-                onChange={setField("BASE_TIPO")}
+                label="Base nacional ou importada *"
+                value={barSemAlcool ? "" : f.BASE_TIPO}
+                onChange={setBaseTipo}
                 options={["Nacional", "Importada", "Nacional e Importada"]}
               />
             </div>

@@ -1,5 +1,4 @@
-import { A_DEFINIR } from "./cardapioDrinks.js";
-import { BASE_SPIRIT_OPTIONS, getDrinkMeta, OPEN_BAR_SEM_ALCOOL } from "./drinkCatalog.js";
+import { BAR_SEM_ALCOOL, BASE_SPIRIT_OPTIONS } from "./drinkCatalog.js";
 import { parseMoneyBR } from "./formatters.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
@@ -38,15 +37,8 @@ function isValidTime(value) {
   return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
 }
 
-/** Open bar com álcool, «À definir» ou ainda sem drinks precisa de bases. Soft bar puro não. */
-export function requiresAlcoholBases(drinks) {
-  const named = (drinks || []).map((drink) => String(drink || "").trim()).filter(Boolean);
-  if (!named.length) return true;
-  return named.some((name) => {
-    if (name === A_DEFINIR) return true;
-    if (name === OPEN_BAR_SEM_ALCOOL) return false;
-    return getDrinkMeta(name).alcoholic !== false;
-  });
+function sameLabel(value, expected) {
+  return String(value || "").trim().toLocaleLowerCase("pt-BR") === expected.toLocaleLowerCase("pt-BR");
 }
 
 function selectedBases(form) {
@@ -54,6 +46,11 @@ function selectedBases(form) {
     .split(/,\s*/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+export function isBarSemAlcool(form) {
+  const bases = selectedBases(form);
+  return bases.length === 1 && sameLabel(bases[0], BAR_SEM_ALCOOL) && sameLabel(form.BASE_TIPO, BAR_SEM_ALCOOL);
 }
 
 export function validatePublicForm(form) {
@@ -139,13 +136,15 @@ export function validatePublicForm(form) {
   if (!drinks.length) errors.push("Escolha pelo menos um drink do open bar (ou «À definir»).");
   if (drinks.length > 6) errors.push("O pacote permite no máximo 6 drinks no open bar.");
 
-  if (requiresAlcoholBases(drinks)) {
+  if (!isBarSemAlcool(form)) {
     const bases = selectedBases(form);
     const known = bases.filter((base) => KNOWN_BASES.has(base.toLocaleLowerCase("pt-BR")));
-    if (!known.length) errors.push("Selecione pelo menos uma base alcoólica do pacote.");
+    if (!known.length) {
+      errors.push("Selecione pelo menos uma base alcoólica do pacote ou «Bar sem álcool».");
+    }
     const baseTipo = String(form.BASE_TIPO || "").trim();
     if (!BASE_TIPO_OPTIONS.includes(baseTipo)) {
-      errors.push("Informe se a base é nacional, importada ou as duas.");
+      errors.push("Informe se a base é nacional, importada ou as duas. No bar sem álcool, use o botão correspondente.");
     }
   }
 

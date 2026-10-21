@@ -130,3 +130,6 @@ export function itemFromName(name) {
 }
 
 export const BASE_SPIRIT_OPTIONS = ["Vodka", "Cachaça", "Saquê", "Gin", "Rum", "Tequila"];
+
+/** Valor gravado em base e tipo quando o cliente escolhe o botão de bar sem álcool. */
+export const BAR_SEM_ALCOOL = "Bar sem álcool";
