@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { BAR_SEM_ALCOOL } from "./drinkCatalog.js";
+import { normalizeHorario } from "./formatters.js";
 import { isBarSemAlcool, validatePublicForm } from "./validateForm.js";
 
 function completeForm(overrides = {}) {
@@ -32,6 +33,15 @@ function completeForm(overrides = {}) {
     ...overrides,
   };
 }
+
+test("hora 16 vira 16:00 e prazo em branco vale 7 dias", () => {
+  assert.equal(normalizeHorario("16"), "16:00");
+  assert.equal(normalizeHorario("1600"), "16:00");
+  assert.equal(normalizeHorario("1630"), "16:30");
+  assert.equal(normalizeHorario("16:30"), "16:30");
+  assert.equal(normalizeHorario("25"), "");
+  assert.deepEqual(validatePublicForm(completeForm({ HORARIO_INICIO: "16", PRAZO_SALDO_QTD: "" })), []);
+});
 
 test("ficha completa passa", () => {
   assert.deepEqual(validatePublicForm(completeForm()), []);
@@ -79,7 +89,6 @@ test("drink em branco e campos de evento vazios bloqueiam o envio", () => {
       TEMPO_OPENBAR: "",
       VALOR_TOTAL_RAW: "",
       SINAL_PCT: "",
-      PRAZO_SALDO_QTD: "",
       CPF: "",
       CEP: "",
     })
@@ -92,7 +101,6 @@ test("drink em branco e campos de evento vazios bloqueiam o envio", () => {
     "tempo de open bar",
     "valor total",
     "sinal de reserva",
-    "prazo",
     "CPF",
     "CEP",
   ]) {

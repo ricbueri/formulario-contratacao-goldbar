@@ -1,5 +1,5 @@
 import { BAR_SEM_ALCOOL, BASE_SPIRIT_OPTIONS } from "./drinkCatalog.js";
-import { parseMoneyBR } from "./formatters.js";
+import { normalizeHorario, parseMoneyBR } from "./formatters.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 const BASE_TIPO_OPTIONS = ["Nacional", "Importada", "Nacional e Importada"];
@@ -27,14 +27,6 @@ export function isValidDateBr(value) {
   if (month < 1 || month > 12 || day < 1 || year < 1900) return false;
   const date = new Date(year, month - 1, day);
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-}
-
-function isValidTime(value) {
-  const match = String(value || "").trim().match(/^(\d{2}):(\d{2})$/);
-  if (!match) return false;
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
 }
 
 function sameLabel(value, expected) {
@@ -94,9 +86,9 @@ export function validatePublicForm(form) {
     errors.push("Informe o número de convidados.");
   }
 
-  const start = String(form.HORARIO_INICIO || "").trim();
-  if (!start) errors.push("Informe o início do open bar.");
-  else if (!isValidTime(start)) errors.push("Horário inválido. Use o formato HH:MM.");
+  const startRaw = String(form.HORARIO_INICIO || "").trim();
+  if (!startRaw) errors.push("Informe o início do open bar.");
+  else if (!normalizeHorario(startRaw)) errors.push("Horário inválido. Ex.: 16, 1600 ou 16:30.");
 
   if (!OPEN_BAR_DURATIONS.has(String(form.TEMPO_OPENBAR || "").trim())) {
     errors.push("Informe o tempo de open bar (de 1 a 6 horas).");
@@ -120,11 +112,11 @@ export function validatePublicForm(form) {
   }
 
   const prazo = String(form.PRAZO_SALDO_QTD || "").trim();
-  if (!/^\d+$/.test(prazo) || Number(prazo) < 1) {
-    errors.push("Informe o prazo para quitar o saldo.");
+  if (prazo && (!/^\d+$/.test(prazo) || Number(prazo) < 1)) {
+    errors.push("Prazo inválido. Informe os dias ou meses, ou deixe em branco para 7 dias.");
   }
   const unidade = String(form.PRAZO_SALDO_UNIDADE || "").trim();
-  if (unidade !== "dias" && unidade !== "meses") {
+  if (unidade && unidade !== "dias" && unidade !== "meses") {
     errors.push("Informe se o prazo do saldo é em dias ou meses.");
   }
 

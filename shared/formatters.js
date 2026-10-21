@@ -112,6 +112,32 @@ export function formatDurationHours(value) {
   return `${n} (${extenso(n)}) ${n === 1 ? "hora" : "horas"}${rest ? ` ${rest}` : ""}`;
 }
 
+/** 16, 1600 ou 16:30 viram HH:MM. Hora sozinha completa com :00. Inválido devolve "". */
+export function normalizeHorario(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const clock = text.match(/^(\d{1,2})\s*[:hH]\s*(\d{1,2})$/);
+  if (clock) {
+    const minuteText = clock[2].length === 1 ? `${clock[2]}0` : clock[2];
+    return finishHorario(Number(clock[1]), Number(minuteText));
+  }
+  const digits = text.replace(/\D/g, "").slice(0, 4);
+  if (!digits) return "";
+  if (digits.length <= 2) return finishHorario(Number(digits), 0);
+  if (digits.length === 3) {
+    const hour = Number(digits.slice(0, 2));
+    if (hour <= 23) return finishHorario(hour, Number(`${digits.slice(2)}0`));
+    return finishHorario(Number(digits.slice(0, 1)), Number(digits.slice(1)));
+  }
+  return finishHorario(Number(digits.slice(0, 2)), Number(digits.slice(2)));
+}
+
+function finishHorario(hour, minute) {
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return "";
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return "";
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
 export function formatPrazo(quantidade, unidade) {
   const parsed = parseInteger(quantidade);
   const n = parsed && parsed > 0 ? parsed : 7;

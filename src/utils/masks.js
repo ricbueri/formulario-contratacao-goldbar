@@ -13,6 +13,15 @@ export function formatCpfCnpjInput(value) {
     .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
 }
 
+export function formatTimeBrInput(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  if (digits.length === 3 && Number(digits.slice(0, 2)) > 23) {
+    return `${digits.slice(0, 1)}:${digits.slice(1)}`;
+  }
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
 export function formatDateBrInput(value) {
   const digits = String(value || "").replace(/\D/g, "").slice(0, 8);
   if (digits.length <= 2) return digits;
